@@ -1,0 +1,63 @@
+{
+  "partition": "held_out_chronological_test",
+  "rows": 56678,
+  "fraud_cases": 75,
+  "legitimate_cases": 56603,
+  "test_used_for_training_or_threshold_selection": false,
+  "fusion_weight_and_threshold_source": "validation_data_only",
+  "velocity_evaluation": "Not evaluated: dataset lacks card IDs and transaction history.",
+  "fusion_score_note": "Fusion score is not a calibrated fraud probability. ROC-AUC and average precision measure ranking and are exploratory.",
+  "autoencoder": {
+    "threshold": 7.566579341888428,
+    "precision": 0.5106382978723404,
+    "recall": 0.32,
+    "f1_score": 0.39344262295081966,
+    "false_positive_rate": 0.0004063388866314506,
+    "roc_auc": 0.9333187286892921,
+    "average_precision": 0.2633946299642781,
+    "tn": 56580,
+    "fp": 23,
+    "fn": 51,
+    "tp": 24,
+    "fraud_detected": 24,
+    "fraud_missed": 51,
+    "legitimate_transactions_flagged": 23
+  },
+  "logistic_regression": {
+    "threshold": 0.8653021577150455,
+    "precision": 0.21122112211221122,
+    "recall": 0.8533333333333334,
+    "f1_score": 0.3386243386243386,
+    "false_positive_rate": 0.004222391039344205,
+    "roc_auc": 0.9841655035952158,
+    "average_precision": 0.7401080313792946,
+    "tn": 56364,
+    "fp": 239,
+    "fn": 11,
+    "tp": 64,
+    "fraud_detected": 64,
+    "fraud_missed": 11,
+    "legitimate_transactions_flagged": 239
+  },
+  "selected_fusion": {
+    "method": "logistic_probability_plus_weighted_log_anomaly",
+    "alpha": 0.35,
+    "threshold": 0.928596390406001,
+    "metrics": {
+      "threshold": 0.928596390406001,
+      "precision": 0.26582278481012656,
+      "recall": 0.84,
+      "f1_score": 0.40384615384615385,
+      "false_positive_rate": 0.003074042011907496,
+      "roc_auc": 0.9834190178376881,
+      "average_precision": 0.5360394808412925,
+      "tn": 56429,
+      "fp": 174,
+      "fn": 12,
+      "tp": 63,
+      "fraud_detected": 63,
+      "fraud_missed": 12,
+      "legitimate_transactions_flagged": 174
+    }
+  }
+}

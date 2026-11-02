@@ -1,0 +1,27 @@
+{
+  "evaluation": "actual HybridInference engine",
+  "dataset": "data\\processed\\test_data.csv",
+  "sampling_method": "All fraud cases plus reproducible random sample of legitimate transactions",
+  "random_seed": 42,
+  "sample_size": 5075,
+  "actual_fraud_cases": 75,
+  "actual_legitimate_cases": 5000,
+  "fusion_threshold": 0.5,
+  "initialization_seconds": 1.3782,
+  "evaluation_seconds": 846.9172,
+  "mean_latency_seconds": 0.16688,
+  "throughput_transactions_per_second": 5.992,
+  "precision": 0.9322033898305084,
+  "recall": 0.7333333333333333,
+  "f1": 0.8208955223880597,
+  "false_positive_rate": 0.0008,
+  "roc_auc": 0.9810613333333333,
+  "average_precision": 0.8666566047545323,
+  "confusion_matrix": {
+    "true_positive": 55,
+    "false_positive": 4,
+    "true_negative": 4996,
+    "false_negative": 20
+  },
+  "note": "This is a stratified sample, not the full test set. Its fraud prevalence differs from the original test set, so precision and average precision may not represent deployment prevalence. Fusion score is not a calibrated fraud probability."
+}

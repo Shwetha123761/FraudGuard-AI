@@ -1,0 +1,37 @@
+{
+  "evaluation": "full validation partition",
+  "test_used_for_threshold_selection": false,
+  "validation": {
+    "dataset": "validation",
+    "rows_evaluated": 45285,
+    "actual_fraud": 52,
+    "graph_method": "partition-level k-nearest-neighbor feature-similarity graph",
+    "graph_nodes": 45285,
+    "graph_edges": 327577,
+    "runtime_seconds": 6.539,
+    "seconds_per_transaction": 0.000144,
+    "score_type": "prototype hybrid score; not a calibrated probability",
+    "fusion_alpha": 0.5,
+    "autoencoder_threshold": 7.566579341888428,
+    "gnn_score_min": 2.0586401916489194e-08,
+    "gnn_score_max": 1.0,
+    "hybrid_score_min": 0.0011143499286845326,
+    "hybrid_score_max": 0.7398865818977356,
+    "metrics": {
+      "threshold": 0.4751006066799164,
+      "precision": 0.2569444444444444,
+      "recall": 0.7115384615384616,
+      "f1": 0.37755102040816324,
+      "false_positive_rate": 0.0023655295912276436,
+      "roc_auc": 0.9443288511280907,
+      "average_precision": 0.45042724494420117,
+      "true_positives": 37,
+      "false_positives": 107,
+      "true_negatives": 45126,
+      "false_negatives": 15,
+      "actual_fraud": 52,
+      "predicted_fraud": 144
+    },
+    "threshold_selection": "Validation only: maximize recall subject to FPR <= 0.5%"
+  }
+}

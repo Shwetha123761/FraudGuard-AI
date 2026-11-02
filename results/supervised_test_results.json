@@ -1,0 +1,18 @@
+{
+  "model": "class_weighted_logistic_regression",
+  "partition": "held_out_chronological_test",
+  "test_rows": 56678,
+  "test_frauds": 75,
+  "threshold_from_validation": 0.8653021577150455,
+  "precision": 0.21122112211221122,
+  "recall": 0.8533333333333334,
+  "f1": 0.3386243386243386,
+  "roc_auc": 0.9841655035952158,
+  "average_precision": 0.7401080313792946,
+  "false_positive_rate": 0.004222391039344205,
+  "true_negatives": 56364,
+  "false_positives": 239,
+  "false_negatives": 11,
+  "true_positives": 64,
+  "test_used_for_training_or_threshold_selection": false
+}

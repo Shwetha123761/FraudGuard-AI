@@ -1,0 +1,243 @@
+import time
+import requests
+import pandas as pd
+import streamlit as st
+import altair as alt
+
+API_URL = "http://127.0.0.1:8000"
+HEALTH_URL = f"{API_URL}/health"
+EVALUATE_URL = f"{API_URL}/v1/evaluate"
+
+st.set_page_config(
+    page_title="FraudGuard AI | Risk Monitor",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    :root {--bg:#080e1b;--panel:#101a2b;--panel2:#121f33;--line:#26354c;--text:#eaf1ff;--muted:#8fa1bb;--blue:#4ea1ff;--violet:#a879ff;--green:#35d6a1;--amber:#f5bd4f;--red:#ff6d87;}
+    .stApp {background:radial-gradient(ellipse at 15% 0%,rgba(45,104,205,.18),transparent 36%),radial-gradient(ellipse at 95% 10%,rgba(142,82,255,.12),transparent 30%),var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+    [data-testid="stHeader"]{background:rgba(8,14,27,.85)}
+    [data-testid="stSidebar"]{background:#0d1728;border-right:1px solid var(--line)}
+    [data-testid="stSidebar"] *{color:var(--text)}
+    .block-container{max-width:1550px;padding-top:1.5rem;padding-bottom:2.5rem}
+    h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif!important;color:var(--text)!important}
+    p,label,.stMarkdown,[data-testid="stMetricLabel"]{color:var(--muted)}
+    .brand{display:flex;align-items:center;gap:13px}
+    .brand-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#286de3,#8957ef);font-size:25px;box-shadow:0 0 26px rgba(78,161,255,.22)}
+    .eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#73b7ff;font-weight:700}
+    .title{font-family:'Space Grotesk',sans-serif;font-size:34px;line-height:1.1;font-weight:700;color:#f4f7ff;margin-top:3px}
+    .subtitle{font-size:13px;color:var(--muted);margin-top:6px}
+    .section-label{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#7db9ff;font-weight:700;margin:7px 0 12px}
+    .card{background:linear-gradient(145deg,rgba(18,31,51,.98),rgba(13,23,39,.98));border:1px solid var(--line);border-radius:15px;padding:17px 18px;height:100%;box-shadow:0 10px 30px rgba(0,0,0,.10)}
+    .card-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700}
+    .card-value{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#f4f7ff;margin-top:8px}
+    .card-foot{font-size:11px;color:var(--muted);margin-top:4px}
+    .pill{display:inline-block;padding:5px 9px;border-radius:7px;font-size:10px;font-weight:700;letter-spacing:.4px}
+    .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#35d6a1;box-shadow:0 0 10px rgba(53,214,161,.65);margin-right:7px}
+    .result{background:linear-gradient(135deg,rgba(42,102,220,.18),rgba(137,87,239,.14));border:1px solid rgba(91,151,255,.35);border-radius:16px;padding:22px}
+    .result-score{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;color:#f4f7ff}
+    div[data-testid="stButton"]>button{background:linear-gradient(100deg,#2874e8,#8058e9);color:white;border:1px solid #568df1;border-radius:9px;font-weight:700}
+    div[data-testid="stButton"]>button:hover{color:white;border-color:#9ec5ff;box-shadow:0 0 20px rgba(78,161,255,.18)}
+    div[data-testid="stTextInput"] input,div[data-testid="stNumberInput"] input{background:#0a1424;color:#eaf1ff;border-color:#2b3b54;border-radius:9px}
+    [data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    hr{border-color:var(--line)}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+if "fg_log" not in st.session_state:
+    st.session_state.fg_log = []
+if "fg_last_result" not in st.session_state:
+    st.session_state.fg_last_result = None
+
+# Sidebar: real API evaluation controls
+with st.sidebar:
+    st.markdown('<div class="brand"><div class="brand-icon">🛡️</div><div><b style="font-size:19px">FraudGuard AI</b><div class="eyebrow">Risk monitor</div></div></div>', unsafe_allow_html=True)
+    st.divider()
+    st.markdown("### Transaction simulator")
+    card_id = st.text_input("Card ID", value="CARD_12345")
+    amount = st.number_input("Transaction amount ($)", min_value=0.0, value=150.0, step=10.0)
+    unusual_input = st.checkbox("Use unusual demo feature", value=False)
+    st.caption("Demo inputs use generated V1–V28 values, not actual card history.")
+    submit = st.button("⚡ Evaluate transaction", use_container_width=True)
+    st.divider()
+    st.caption("API endpoint")
+    st.code("127.0.0.1:8000/v1/evaluate", language=None)
+    st.caption("Keep the FastAPI server running in its own terminal.")
+
+# Health check
+health = None
+health_error = None
+try:
+    hr = requests.get(HEALTH_URL, timeout=3)
+    hr.raise_for_status()
+    health = hr.json()
+except requests.RequestException as exc:
+    health_error = str(exc)
+
+components = (health or {}).get("components", {})
+ready = (health or {}).get("status") == "ready"
+active = components.get("active_detection_components", [])
+api_color = "#35d6a1" if ready else "#ff6d87"
+
+# Header
+st.markdown(
+    '<div class="brand"><div class="brand-icon">🛡️</div><div><div class="eyebrow">AI transaction intelligence</div><div class="title">FraudGuard <span style="color:#73b7ff">AI</span></div><div class="subtitle">Real-time risk monitoring · Fraud analytics · Model observability</div></div></div>',
+    unsafe_allow_html=True,
+)
+st.write("")
+st.markdown(
+    f'<span class="status-dot" style="background:{api_color};box-shadow:0 0 10px {api_color}"></span>'
+    f'<span style="font-size:11px;letter-spacing:1.3px;font-weight:700;color:{api_color}">{"ALL SYSTEMS OPERATIONAL" if ready else "API CONNECTION ISSUE"}</span>'
+    '<span style="color:#8fa1bb;font-size:11px">　·　Local development environment</span>',
+    unsafe_allow_html=True,
+)
+if not ready:
+    st.warning("FastAPI health check is not ready. Check that Uvicorn is running at http://127.0.0.1:8000.")
+    if health_error:
+        st.caption(health_error)
+
+# Metrics are explicitly session-scoped rather than fabricated global stats.
+log = st.session_state.fg_log
+fraud_review_count = sum(1 for item in log if item["Decision"] != "APPROVE")
+approval_rate = (100 * (len(log) - fraud_review_count) / len(log)) if log else None
+
+st.markdown('<div class="section-label">System overview</div>', unsafe_allow_html=True)
+m1, m2, m3, m4 = st.columns(4, gap="medium")
+cards = [
+    ("SESSION TRANSACTIONS", str(len(log)), "Evaluations in this session", "#4ea1ff"),
+    ("REVIEW FLAGS", str(fraud_review_count), "Non-approve decisions in session", "#a879ff"),
+    ("APPROVAL RATE", f"{approval_rate:.1f}%" if approval_rate is not None else "—", "Based on this session" if log else "Awaiting first evaluation", "#35d6a1"),
+    ("FUSION PIPELINE", "READY" if ready and components.get("fusion_config") == "loaded" else "CHECK", "AE + Logistic Regression + Fusion", "#f5bd4f"),
+]
+for col, (label, value, foot, color) in zip([m1,m2,m3,m4], cards):
+    with col:
+        st.markdown(f'<div class="card"><div class="card-label">{label}</div><div class="card-value" style="color:{color}">{value}</div><div class="card-foot">{foot}</div></div>', unsafe_allow_html=True)
+
+st.write("")
+left, right = st.columns([1.15, 0.85], gap="large")
+with left:
+    st.markdown('<div class="section-label">Transaction analytics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### Recent evaluation activity")
+    if log:
+        chart_df = pd.DataFrame(log[::-1])
+        chart = alt.Chart(chart_df).mark_line(point=alt.OverlayMarkDef(size=65)).encode(
+            x=alt.X("Evaluation:O", title="Recent evaluations", axis=alt.Axis(labelColor="#91a2bb", titleColor="#91a2bb", grid=False)),
+            y=alt.Y("Fusion score:Q", title="Fusion ranking score", scale=alt.Scale(zero=True), axis=alt.Axis(labelColor="#91a2bb", titleColor="#91a2bb", gridColor="#26354c")),
+            tooltip=["Card ID:N", "Decision:N", "Fusion score:Q"]
+        ).properties(height=235).configure_view(strokeOpacity=0).configure(background="#101a2b").configure_axis(domainColor="#26354c")
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.markdown('<div style="height:130px;display:flex;align-items:center;justify-content:center;color:#8fa1bb;text-align:center">No session data yet.<br>Evaluate a transaction to populate the chart.</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with right:
+    st.markdown('<div class="section-label">Detection components</div>', unsafe_allow_html=True)
+    if health:
+        rows = [
+            ("Autoencoder", components.get("autoencoder", "unknown")),
+            ("Logistic Regression", components.get("supervised_model", "unknown")),
+            ("Fusion configuration", components.get("fusion_config", "unknown")),
+            ("Graph Neural Network", components.get("gnn", "unknown")),
+        ]
+        for name, status in rows:
+            is_ready = status == "loaded"
+            color = "#35d6a1" if is_ready else ("#f5bd4f" if status == "not_integrated" else "#ff6d87")
+            st.markdown(
+                f'<div class="card" style="padding:13px 15px;margin-bottom:9px;height:auto;display:flex;justify-content:space-between;align-items:center">'
+                f'<span style="color:#eaf1ff;font-size:13px;font-weight:600">{name}</span>'
+                f'<span class="pill" style="background:{color}18;color:{color};border:1px solid {color}55">{status.replace("_"," ").upper()}</span></div>',
+                unsafe_allow_html=True,
+            )
+        st.caption("Active: " + (", ".join(active) if active else "Not reported"))
+    else:
+        st.warning("Model status unavailable.")
+
+if submit:
+    if not card_id.strip():
+        st.error("Enter a Card ID.")
+    elif not ready:
+        st.error("Cannot evaluate while the API is unavailable.")
+    else:
+        features = {f"V{i}": 0.0 for i in range(1, 29)}
+        if unusual_input:
+            features["V1"] = 4.5
+            features["V2"] = -3.0
+        payload = {"card_id": card_id.strip(), "amount": float(amount), "features": features, "timestamp": time.time()}
+        try:
+            with st.spinner("Evaluating transaction..."):
+                response = requests.post(EVALUATE_URL, json=payload, timeout=15)
+            if response.ok:
+                result = response.json()
+                st.session_state.fg_last_result = result
+                breakdown = result.get("breakdown", {})
+                st.session_state.fg_log.append({
+                    "Time": time.strftime("%H:%M:%S"),
+                    "Card ID": result.get("card_id", card_id.strip()),
+                    "Amount ($)": round(float(amount), 2),
+                    "Decision": result.get("decision", "UNKNOWN"),
+                    "Fusion score": float(result.get("risk_score", 0)),
+                    "Risk level": result.get("risk_level", "UNKNOWN"),
+                })
+                st.session_state.fg_log = st.session_state.fg_log[-100:]
+                st.rerun()
+            else:
+                st.error(f"API returned HTTP {response.status_code}: {response.text}")
+        except requests.RequestException as exc:
+            st.error(f"Could not connect to FastAPI: {exc}")
+
+result = st.session_state.fg_last_result
+if result:
+    st.write("")
+    st.markdown('<div class="section-label">Latest transaction assessment</div>', unsafe_allow_html=True)
+    decision = result.get("decision", "UNKNOWN")
+    dcolor = {"APPROVE":"#35d6a1","OTP_VERIFY":"#f5bd4f","BLOCK":"#ff6d87"}.get(decision, "#91a1bb")
+    breakdown = result.get("breakdown", {})
+    a, b = st.columns([0.9, 1.1], gap="large")
+    with a:
+        st.markdown(
+            f'<div class="result"><div class="card-label">FUSION RANKING SCORE</div>'
+            f'<div class="result-score">{float(result.get("risk_score",0)):.6f}</div>'
+            f'<div style="margin-top:8px;color:#8fa1bb;font-size:11px">Not a calibrated fraud probability</div>'
+            f'<div style="font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:700;color:{dcolor};margin-top:14px">{decision.replace("_"," ")}</div>'
+            f'<div style="color:#8fa1bb;font-size:12px;margin-top:5px">Risk level: {result.get("risk_level","UNKNOWN")}</div></div>',
+            unsafe_allow_html=True,
+        )
+    with b:
+        q1,q2,q3 = st.columns(3)
+        q1.metric("Logistic score", f'{float(breakdown.get("supervised_fraud_score",0)):.4f}')
+        q2.metric("Reconstruction error", f'{float(breakdown.get("reconstruction_error",0)):.4f}')
+        q3.metric("Fusion threshold", f'{float(breakdown.get("fusion_threshold",0)):.4f}')
+        st.markdown("**Risk factors**")
+        factors = breakdown.get("risk_factors", [])
+        if factors:
+            for factor in factors:
+                st.write("• " + factor)
+        else:
+            st.write("No risk factors reported.")
+        st.caption(breakdown.get("decision_policy_note", ""))
+
+st.write("")
+st.markdown('<div class="section-label">Transaction history · current session</div>', unsafe_allow_html=True)
+if st.session_state.fg_log:
+    history = pd.DataFrame(st.session_state.fg_log[::-1])
+    st.dataframe(history, use_container_width=True, hide_index=True)
+    st.download_button("Export session history (CSV)", history.to_csv(index=False).encode("utf-8"), "fraudguard_session_history.csv", "text/csv")
+else:
+    st.markdown('<div class="card"><div class="card-label">No transactions evaluated yet</div><div class="card-foot">Your real API evaluation results will appear here. No sample totals or fabricated transactions are displayed.</div></div>', unsafe_allow_html=True)
+
+with st.expander("Inspect full API response"):
+    if result:
+        st.json(result)
+    else:
+        st.caption("Evaluate a transaction to view its full response.")
+
+st.write("")
+st.caption("FraudGuard AI · Local prototype · Threshold selected on validation data · Velocity alerts are reported separately · GNN not integrated")

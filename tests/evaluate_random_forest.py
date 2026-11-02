@@ -1,0 +1,209 @@
+
+import os
+
+# Limit numerical-library threads to avoid excessive CPU usage.
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+from pathlib import Path
+import json
+
+import numpy as np
+import pandas as pd
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import (
+    average_precision_score,
+    roc_auc_score,
+    confusion_matrix,
+    precision_score,
+    recall_score,
+    f1_score,
+)
+from sklearn.pipeline import make_pipeline
+
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / "data" / "processed"
+RESULTS = ROOT / "results"
+RESULTS.mkdir(exist_ok=True, parents=True)
+
+TARGET_RECALL = 0.80
+MAX_FPR = 0.005
+
+
+def evaluate(y, scores, threshold):
+    pred = (scores >= threshold).astype(int)
+
+    tn, fp, fn, tp = confusion_matrix(
+        y, pred, labels=[0, 1]
+    ).ravel()
+
+    recall = recall_score(y, pred, zero_division=0)
+    precision = precision_score(y, pred, zero_division=0)
+    specificity = tn / (tn + fp) if tn + fp else 0.0
+
+    return {
+        "threshold": float(threshold),
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1": float(f1_score(y, pred, zero_division=0)),
+        "false_positive_rate": float(fp / (tn + fp)),
+        "balanced_accuracy": float((recall + specificity) / 2),
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "tp": int(tp),
+    }
+
+
+def main():
+    train = pd.read_csv(DATA / "train_data.csv")
+    test = pd.read_csv(DATA / "test_data.csv")
+
+    features = [
+        c for c in train.columns
+        if c.startswith("V") or c == "Amount"
+    ]
+
+    # Preserve chronology by using the earlier 80% of training data
+    # for fitting and the later 20% for threshold selection.
+    split = int(len(train) * 0.8)
+
+    fit = train.iloc[:split]
+    val = train.iloc[split:]
+
+    X_fit = fit[features]
+    y_fit = fit["Class"].astype(int)
+
+    X_val = val[features]
+    y_val = val["Class"].astype(int)
+
+    X_test = test[features]
+    y_test = test["Class"].astype(int)
+
+    print("Training rows:", len(fit), "| Fraud:", int(y_fit.sum()))
+    print("Validation rows:", len(val), "| Fraud:", int(y_val.sum()))
+    print("Test rows:", len(test), "| Fraud:", int(y_test.sum()))
+
+    model = make_pipeline(
+        SimpleImputer(strategy="median"),
+        RandomForestClassifier(
+            n_estimators=100,
+            max_depth=12,
+            min_samples_leaf=2,
+            class_weight="balanced_subsample",
+            random_state=42,
+            n_jobs=2,
+        ),
+    )
+
+    print("\nTraining Random Forest...", flush=True)
+    model.fit(X_fit, y_fit)
+
+    print("Scoring validation data...", flush=True)
+    val_scores = model.predict_proba(X_val)[:, 1]
+
+    # Select threshold from validation data only.
+    thresholds = np.unique(
+        np.concatenate(
+            (
+                np.linspace(0.01, 0.99, 300),
+                val_scores,
+            )
+        )
+    )
+
+    val_results = [
+        evaluate(y_val.to_numpy(), val_scores, t)
+        for t in thresholds
+    ]
+
+    eligible = [
+        r for r in val_results
+        if r["recall"] >= TARGET_RECALL
+        and r["false_positive_rate"] <= MAX_FPR
+    ]
+
+    if eligible:
+        chosen = max(
+            eligible,
+            key=lambda r: (
+                r["precision"], r["recall"], r["threshold"]
+            ),
+        )
+        status = "both_validation_targets_met"
+    else:
+        eligible_fpr = [
+            r for r in val_results
+            if r["false_positive_rate"] <= MAX_FPR
+        ]
+
+        if eligible_fpr:
+            chosen = max(
+                eligible_fpr,
+                key=lambda r: (
+                    r["recall"], r["precision"], r["threshold"]
+                ),
+            )
+            status = "recall_target_not_met"
+        else:
+            chosen = min(
+                val_results,
+                key=lambda r: (
+                    r["false_positive_rate"], -r["recall"]
+                ),
+            )
+            status = "fpr_target_not_met"
+
+    print("\nValidation status:", status)
+    print("Selected validation metrics:")
+    print(json.dumps(chosen, indent=2))
+
+    # Evaluate the selected threshold on the held-out test set.
+    print("\nScoring held-out test data...", flush=True)
+    test_scores = model.predict_proba(X_test)[:, 1]
+
+    test_metrics = evaluate(
+        y_test.to_numpy(),
+        test_scores,
+        chosen["threshold"],
+    )
+
+    test_metrics["roc_auc"] = float(
+        roc_auc_score(y_test, test_scores)
+    )
+    test_metrics["pr_auc_average_precision"] = float(
+        average_precision_score(y_test, test_scores)
+    )
+
+    print("\nHeld-out test results:")
+    print(json.dumps(test_metrics, indent=2))
+
+    output = {
+        "model": "Random Forest",
+        "features": features,
+        "threshold_selection": (
+            "Highest precision among validation thresholds satisfying "
+            "recall >= 0.80 and false-positive rate <= 0.005"
+        ),
+        "validation_status": status,
+        "validation_metrics": chosen,
+        "test_metrics": test_metrics,
+    }
+
+    output_path = RESULTS / "random_forest_results.json"
+    output_path.write_text(
+        json.dumps(output, indent=2),
+        encoding="utf-8",
+    )
+
+    print("\nResults saved to:", output_path)
+
+
+if __name__ == "__main__":
+    main()
+

@@ -1,0 +1,194 @@
+﻿from pathlib import Path
+import sys
+import time
+import math
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from engine.feature_store import RealTimeFeatureStore
+from engine.inference import FraudGuardInferenceEngine
+from engine.hybrid_inference import HybridInference, FEATURES
+
+app = FastAPI(
+    title="FraudGuard AI",
+    description=(
+        "Credit-card fraud detection using Autoencoder, supervised "
+        "learning, a feature-similarity GNN, and transaction-velocity rules."
+    ),
+    version="2.2.0",
+)
+
+feature_store = RealTimeFeatureStore()
+inference_engine = FraudGuardInferenceEngine()
+hybrid_engine = None
+hybrid_error = None
+
+try:
+    hybrid_engine = HybridInference()
+    print("[+] Hybrid Autoencoder + GNN inference loaded.")
+except Exception as exc:
+    hybrid_error = str(exc)
+    print(f"[!] Hybrid inference unavailable: {exc}")
+
+
+class TransactionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    card_id: str = Field(..., min_length=1, max_length=100)
+    amount: float = Field(..., ge=0)
+    features: dict[str, float]
+    timestamp: float = Field(default_factory=time.time)
+
+    @field_validator("card_id")
+    @classmethod
+    def validate_card_id(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("card_id must not be blank")
+        return value
+
+    @field_validator("timestamp", "amount")
+    @classmethod
+    def validate_finite_numbers(cls, value):
+        if not math.isfinite(value):
+            raise ValueError("Value must be finite")
+        return value
+
+    @field_validator("features")
+    @classmethod
+    def validate_feature_values(cls, values):
+        for name, value in values.items():
+            if not math.isfinite(value):
+                raise ValueError(f"Feature {name} must be finite")
+        return values
+
+
+@app.get("/")
+def read_root():
+    return {
+        "service": "FraudGuard AI",
+        "status": "online",
+        "version": app.version,
+        "documentation": "/docs",
+        "health_endpoint": "/health",
+    }
+
+
+@app.get("/health")
+def health():
+    component_status = inference_engine.health()
+    component_status["hybrid_gnn"] = (
+        "loaded" if hybrid_engine is not None else "unavailable"
+    )
+
+    return {
+        "status": "ready" if component_status.get("autoencoder") == "loaded"
+        else "degraded",
+        "components": component_status,
+        "hybrid_error": hybrid_error,
+        "note": (
+            "The original evaluation endpoint uses the existing AE + "
+            "Logistic Regression fusion. The separate hybrid endpoint uses "
+            "the Autoencoder + feature-similarity GNN prototype."
+        ),
+    }
+
+
+@app.post("/v1/evaluate", summary="Evaluate using the existing fusion pipeline")
+def evaluate_transaction_endpoint(payload: TransactionRequest):
+    required_features = {f"V{i}" for i in range(1, 29)}
+    missing = sorted(required_features - set(payload.features))
+
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Missing required features", "features": missing},
+        )
+
+    tx_data = dict(payload.features)
+    tx_data["Amount"] = payload.amount
+
+    try:
+        velocity_metrics = feature_store.update_and_get_velocity(
+            card_id=payload.card_id,
+            current_timestamp=payload.timestamp,
+        )
+
+        result = inference_engine.evaluate_transaction(
+            transaction_features=tx_data,
+            velocity_metrics=velocity_metrics,
+        )
+
+        return {
+            "card_id": payload.card_id,
+            "timestamp": payload.timestamp,
+            "decision": result["action"],
+            "risk_score": result["risk_score"],
+            "risk_level": result["risk_level"],
+            "breakdown": result["breakdown"],
+        }
+
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Transaction evaluation failed. Check server logs.",
+        ) from exc
+
+
+@app.post(
+    "/v1/evaluate-hybrid",
+    summary="Evaluate using the Autoencoder + GNN prototype",
+)
+def evaluate_hybrid_endpoint(payload: TransactionRequest):
+    if hybrid_engine is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Hybrid inference is unavailable. Check API server logs.",
+        )
+
+    required_features = {f"V{i}" for i in range(1, 29)}
+    missing = sorted(required_features - set(payload.features))
+
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Missing required features", "features": missing},
+        )
+
+    tx_data = dict(payload.features)
+    tx_data["Amount"] = payload.amount
+
+    try:
+        result = hybrid_engine.predict(tx_data)
+
+        return {
+            "card_id": payload.card_id,
+            "timestamp": payload.timestamp,
+            "decision": result["decision"],
+            "risk_score": result["risk_score"],
+            "risk_level": result["risk_level"],
+            "breakdown": result["breakdown"],
+            "score_type": result["score_type"],
+            "model": "Autoencoder + feature-similarity GNN prototype",
+            "note": (
+                "The score is not a calibrated probability. Input features, "
+                "including Amount, must use the training data's scale."
+            ),
+        }
+
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Hybrid evaluation failed. Check API server logs.",
+        ) from exc

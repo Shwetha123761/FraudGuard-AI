@@ -1,0 +1,17 @@
+{
+  "threshold": 0.8653021577150455,
+  "precision": 0.16666666666666666,
+  "recall": 0.8653846153846154,
+  "f1": 0.2795031055900621,
+  "false_positive_rate": 0.0049742444675347644,
+  "true_negatives": 45008,
+  "false_positives": 225,
+  "false_negatives": 7,
+  "true_positives": 45,
+  "roc_auc": 0.9700354914468504,
+  "average_precision": 0.7724641999372428,
+  "target_max_fpr": 0.005,
+  "threshold_selection": "Maximum validation recall subject to FPR <= 0.005; ties resolved using the highest threshold.",
+  "validation_rows": 45285,
+  "validation_frauds": 52
+}

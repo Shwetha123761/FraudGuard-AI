@@ -1,0 +1,27 @@
+{
+  "model": "Autoencoder + feature-similarity GNN prototype",
+  "evaluation_type": "partial_test_sample_not_full_test_evaluation",
+  "sample_size": 2000,
+  "sample_fraud_cases": 3,
+  "fusion_threshold": 0.5,
+  "metrics": {
+    "precision": 0.3333333333333333,
+    "recall": 1.0,
+    "f1_score": 0.5,
+    "roc_auc": 0.99799699549324,
+    "average_precision": 0.3277777777777778,
+    "false_positive_rate": 0.0030045067601402104,
+    "tn": 1991,
+    "fp": 6,
+    "fn": 0,
+    "tp": 3
+  },
+  "runtime_seconds": 213.49,
+  "score_note": "Prototype fusion score; not a calibrated fraud probability.",
+  "limitations": [
+    "Only the first 2000 rows of the held-out test partition were evaluated.",
+    "Results must not be reported as full-test performance.",
+    "The fusion threshold has not been calibrated using validation predictions.",
+    "Graph edges represent feature similarity, not actual card/account relationships."
+  ]
+}

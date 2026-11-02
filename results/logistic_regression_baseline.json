@@ -1,0 +1,78 @@
+{
+  "model": "Logistic Regression",
+  "features": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "Amount"
+  ],
+  "threshold": 0.5,
+  "train_transactions": 227845,
+  "test_transactions": 56962,
+  "train_fraud_cases": 417,
+  "test_fraud_cases": 75,
+  "roc_auc": 0.9863208348714703,
+  "pr_auc_average_precision": 0.7621664347050764,
+  "confusion_matrix": [
+    [
+      55414,
+      1473
+    ],
+    [
+      7,
+      68
+    ]
+  ],
+  "classification_report": {
+    "Legitimate": {
+      "precision": 0.9998736940870789,
+      "recall": 0.9741065621319458,
+      "f1-score": 0.9868219539124551,
+      "support": 56887.0
+    },
+    "Fraud": {
+      "precision": 0.04412719013627515,
+      "recall": 0.9066666666666666,
+      "f1-score": 0.08415841584158416,
+      "support": 75.0
+    },
+    "accuracy": 0.9740177662301184,
+    "macro avg": {
+      "precision": 0.5220004421116771,
+      "recall": 0.9403866143993063,
+      "f1-score": 0.5354901848770196,
+      "support": 56962.0
+    },
+    "weighted avg": {
+      "precision": 0.9986152939642547,
+      "recall": 0.9740177662301184,
+      "f1-score": 0.9856334463924362,
+      "support": 56962.0
+    }
+  }
+}

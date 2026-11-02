@@ -1,0 +1,34 @@
+{
+  "model": "Causal temporal GNN experiment",
+  "architecture": "Two-layer causal temporal message-passing network",
+  "graph_method": "Each node aggregates up to five preceding nodes in the chronologically ordered sequence.",
+  "temporal_window": 5,
+  "training_nodes": 6000,
+  "validation_nodes": 45285,
+  "training_fraud_cases": 365,
+  "validation_fraud_cases": 52,
+  "validation_only_threshold_selection": true,
+  "test_used_for_training_or_threshold_selection": false,
+  "threshold_selection_fpr_constraint": 0.005,
+  "best_validation_average_precision": 0.18822591104859243,
+  "validation_metrics": {
+    "threshold": 0.6508240699768066,
+    "precision": 0.18181818181818182,
+    "recall": 0.6923076923076923,
+    "f1": 0.288,
+    "false_positive_rate": 0.0035814560166250306,
+    "average_precision": 0.18822591104859243,
+    "roc_auc": 0.9025639041611893,
+    "predicted_fraud": 198,
+    "actual_fraud": 52
+  },
+  "limitations": [
+    "Temporal proximity does not establish cardholder or account relationships.",
+    "This is not a reproduction of the paper's GTAN architecture.",
+    "Training uses a stratified sample of training transactions; edges connect preceding nodes in that sampled sequence.",
+    "Validation metrics are used for checkpoint selection and threshold selection, so they are model-selection metrics, not an unbiased final test estimate.",
+    "This experiment is separate from the existing GCN and hybrid inference pipeline."
+  ],
+  "weights_path": "models\\weights\\temporal_gnn_model_state.pt",
+  "scaler_path": "models\\weights\\temporal_gnn_scaler.npz"
+}

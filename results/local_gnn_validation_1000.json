@@ -1,0 +1,35 @@
+{
+  "sample_size": 1000,
+  "fraud_cases": 52,
+  "legitimate_cases": 948,
+  "threshold": 0.5,
+  "initialization_seconds": 1.0816,
+  "cache_setup_seconds": 0.0499,
+  "baseline_mean_latency_seconds": 0.17840616699907696,
+  "optimized_mean_latency_seconds": 0.11208709330001147,
+  "speedup_ratio": 1.5916744894218673,
+  "maximum_fusion_score_difference": 5.053276984773314e-07,
+  "decision_mismatches": 0,
+  "baseline_metrics": {
+    "precision": 0.9736842105263158,
+    "recall": 0.7115384615384616,
+    "f1": 0.8222222222222222,
+    "true_positive": 37,
+    "false_positive": 1,
+    "true_negative": 947,
+    "false_negative": 15
+  },
+  "optimized_metrics": {
+    "precision": 0.9736842105263158,
+    "recall": 0.7115384615384616,
+    "f1": 0.8222222222222222,
+    "true_positive": 37,
+    "false_positive": 1,
+    "true_negative": 947,
+    "false_negative": 15
+  },
+  "numerical_tolerance": 2e-05,
+  "score_comparison_pass": true,
+  "decision_comparison_pass": true,
+  "note": "Validation sample for inference equivalence only. Not a final performance estimate."
+}

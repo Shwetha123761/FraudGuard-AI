@@ -1,0 +1,23 @@
+{
+  "model": "GCN feature-similarity graph",
+  "validation_only_threshold_selection": true,
+  "test_used_for_training_or_threshold_selection": false,
+  "graph_method": "k-nearest-neighbor feature similarity graph",
+  "graph_limitations": "Edges represent feature similarity, not known real-world card or account relationships. Validation graph was built separately.",
+  "sampled_training_nodes": 12000,
+  "training_fraud_cases": 365,
+  "validation_metrics": {
+    "threshold": 0.9378564357757568,
+    "precision": 0.2868217054263566,
+    "recall": 0.7115384615384616,
+    "f1": 0.4088397790055249,
+    "roc_auc": 0.9259360507730061,
+    "average_precision": 0.628562576219212,
+    "predicted_fraud": 129,
+    "actual_fraud": 52,
+    "false_positive_rate": 0.0020339132933919926
+  },
+  "best_validation_average_precision": 0.628562576219212,
+  "weights_path": "models\\weights\\gnn_model_state.pt",
+  "scaler_path": "models\\weights\\gnn_scaler.npz"
+}

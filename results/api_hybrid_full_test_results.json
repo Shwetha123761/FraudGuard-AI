@@ -1,0 +1,25 @@
+{
+  "evaluation": "actual HybridInference engine",
+  "dataset": "data\\processed\\test_data.csv",
+  "sample_size": 56678,
+  "actual_fraud_cases": 75,
+  "actual_legitimate_cases": 56603,
+  "fusion_threshold": 0.5,
+  "initialization_seconds": 0.7553,
+  "evaluation_seconds": 6378.2782,
+  "mean_latency_seconds": 0.112535,
+  "throughput_transactions_per_second": 8.886,
+  "precision": 0.625,
+  "recall": 0.7333333333333333,
+  "f1": 0.6748466257668712,
+  "false_positive_rate": 0.0005830079677755596,
+  "roc_auc": 0.9811916918420108,
+  "average_precision": 0.5996721312892364,
+  "confusion_matrix": {
+    "true_positive": 55,
+    "false_positive": 33,
+    "true_negative": 56570,
+    "false_negative": 20
+  },
+  "note": "Full held-out test evaluation using the actual inference engine. Threshold remained fixed at 0.5. The risk score is not a calibrated fraud probability."
+}

@@ -1,0 +1,17 @@
+{
+  "transactions_compared": 300,
+  "fraud_transactions": 52,
+  "original_initialization_seconds": 0.727842399966903,
+  "optimized_initialization_seconds": 0.6331931000459008,
+  "original_mean_latency_seconds": 0.10061557366609729,
+  "optimized_mean_latency_seconds": 0.08846917699964252,
+  "max_absolute_fusion_score_difference": 0.0,
+  "max_absolute_gnn_score_difference": 0.0,
+  "mean_absolute_fusion_score_difference": 0.0,
+  "decision_mismatches": 0,
+  "decision_mismatch_count": 0,
+  "tolerance": 2e-05,
+  "score_comparison_pass": true,
+  "decision_comparison_pass": true,
+  "overall_pass": true
+}

@@ -1,0 +1,38 @@
+{
+  "evaluation": "full held-out test partition",
+  "threshold_source": "validation dataset only",
+  "threshold": 0.4751006066799164,
+  "test_used_for_training_or_threshold_selection": false,
+  "test": {
+    "dataset": "test",
+    "rows_evaluated": 56678,
+    "actual_fraud": 75,
+    "graph_method": "partition-level k-nearest-neighbor feature-similarity graph",
+    "graph_nodes": 56678,
+    "graph_edges": 407797,
+    "runtime_seconds": 10.563,
+    "seconds_per_transaction": 0.000186,
+    "score_type": "prototype hybrid score; not a calibrated probability",
+    "fusion_alpha": 0.5,
+    "autoencoder_threshold": 7.566579341888428,
+    "gnn_score_min": 1.6110341221065028e-06,
+    "gnn_score_max": 1.0,
+    "hybrid_score_min": 0.0009591146372258663,
+    "hybrid_score_max": 0.932326078414917,
+    "metrics": {
+      "threshold": 0.4751006066799164,
+      "precision": 0.3005181347150259,
+      "recall": 0.7733333333333333,
+      "f1": 0.43283582089552236,
+      "false_positive_rate": 0.002385032595445471,
+      "roc_auc": 0.981218663321732,
+      "average_precision": 0.502847209432659,
+      "true_positives": 58,
+      "false_positives": 135,
+      "true_negatives": 56468,
+      "false_negatives": 17,
+      "actual_fraud": 75,
+      "predicted_fraud": 193
+    }
+  }
+}
