@@ -27,6 +27,27 @@ p,label,.stMarkdown,[data-testid="stMetricLabel"]{color:var(--muted)} .brand{dis
 .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px} .result{background:linear-gradient(135deg,rgba(42,102,220,.18),rgba(137,87,239,.14));border:1px solid rgba(91,151,255,.35);border-radius:16px;padding:22px}
 .result-score{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;color:#f4f7ff} div[data-testid="stButton"]>button{background:linear-gradient(100deg,#2874e8,#8058e9);color:white;border:1px solid #568df1;border-radius:9px;font-weight:700}
 div[data-testid="stTextInput"] input,div[data-testid="stNumberInput"] input{background:#0a1424;color:#eaf1ff;border-color:#2b3b54;border-radius:9px} [data-testid="stDataFrame"]{border:1px solid var(--line);border-radius:10px;overflow:hidden} hr{border-color:var(--line)}
+
+/* Dashboard layout refresh */
+.block-container{width:100%;max-width:1380px;padding-left:clamp(1rem,3vw,2.75rem);padding-right:clamp(1rem,3vw,2.75rem);padding-top:1.25rem}
+.brand-icon{flex:0 0 48px}
+.card{min-height:112px;transition:border-color .18s ease,transform .18s ease}
+.card:hover{border-color:#45658f;transform:translateY(-1px)}
+.section-label{margin-top:18px;margin-bottom:10px}
+.result{min-height:218px;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.result-score{font-size:clamp(34px,3vw,44px);letter-spacing:-1.5px}
+.score-track{height:9px;width:100%;background:#26354c;border-radius:99px;overflow:hidden;margin:10px 0 5px}
+.score-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#35d6a1,#f5bd4f,#ff6d87)}
+[data-testid="stMetric"]{background:rgba(16,26,43,.72);border:1px solid #26354c;border-radius:12px;padding:12px 14px}
+[data-testid="stMetricLabel"]{font-size:11px}
+[data-testid="stMetricValue"]{font-family:'Space Grotesk',sans-serif}
+div[data-testid="stDataFrame"]{width:100%}
+@media(max-width:900px){
+ .block-container{padding-left:1rem;padding-right:1rem}
+ .title{font-size:28px}
+ .card-value{font-size:23px}
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -219,7 +240,19 @@ if result:
     ))
     a, b = st.columns([0.9, 1.1], gap="large")
     with a:
-        st.markdown(f'<div class="result"><div class="card-label">PROTOTYPE FUSION SCORE</div><div class="result-score">{float(result.get("risk_score", 0)):.6f}</div><div style="margin-top:8px;color:#8fa1bb;font-size:11px">Not a calibrated fraud probability</div><div style="font-family:Space Grotesk,sans-serif;font-size:22px;font-weight:700;color:{dcolor};margin-top:14px">{decision.replace("_", " ")}</div><div style="color:#8fa1bb;font-size:12px;margin-top:5px">Risk level: {result.get("risk_level", "UNKNOWN")}</div></div>', unsafe_allow_html=True)
+        fusion_score = float(result.get("risk_score", 0))
+        score_width = min(max(fusion_score, 0.0), 1.0) * 100
+        st.markdown(
+            f'<div class="result">'
+            f'<div class="card-label">HYBRID FUSION SCORE · PROTOTYPE</div>'
+            f'<div class="result-score">{fusion_score:.6f}</div>'
+            f'<div class="score-track"><div class="score-fill" style="width:{score_width:.2f}%"></div></div>'
+            f'<div style="font-size:11px;color:#8fa1bb">Relative model score · not a calibrated fraud probability</div>'
+            f'<div style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:700;color:{dcolor};margin-top:12px">{decision.replace("_", " ")}</div>'
+            f'<div style="color:#8fa1bb;font-size:12px;margin-top:3px">Risk level: {result.get("risk_level", "UNKNOWN")}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
     with b:
         conversion = result.get("amount_conversion", {})
         if conversion:
