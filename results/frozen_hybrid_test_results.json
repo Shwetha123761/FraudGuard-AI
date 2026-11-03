@@ -1,0 +1,64 @@
+{
+  "project": "FraudGuard AI",
+  "evaluation": "frozen_chronological_test_evaluation",
+  "dataset": "data/processed/test_data.csv",
+  "rows": 56678,
+  "fraud_cases": 75,
+  "legitimate_cases": 56603,
+  "thresholds": {
+    "autoencoder": 7.566579341888428,
+    "gnn": 0.9378564357757568,
+    "hybrid_fusion": 0.5
+  },
+  "threshold_selection": "Thresholds frozen from validation before test evaluation. Test labels were not used for model fitting or threshold selection.",
+  "model_weights_modified": false,
+  "model_weight_hashes_unchanged_before_after": true,
+  "runtime_seconds": 44.65,
+  "models": {
+    "autoencoder": {
+      "precision": 0.5106382978723404,
+      "recall": 0.32,
+      "f1": 0.39344262295081966,
+      "average_precision": 0.2633946299642781,
+      "roc_auc": 0.9333187286892921,
+      "false_positive_rate": 0.0004063388866314506,
+      "tn": 56580,
+      "fp": 23,
+      "fn": 51,
+      "tp": 24
+    },
+    "gnn": {
+      "precision": 0.5833333333333334,
+      "recall": 0.7466666666666667,
+      "f1": 0.6549707602339181,
+      "average_precision": 0.742726,
+      "roc_auc": 0.982244,
+      "false_positive_rate": 0.000706676,
+      "tn": 56563,
+      "fp": 40,
+      "fn": 19,
+      "tp": 56
+    },
+    "hybrid": {
+      "precision": 0.625,
+      "recall": 0.7333333333333333,
+      "f1": 0.6748466257668712,
+      "average_precision": 0.599672,
+      "roc_auc": 0.981191,
+      "false_positive_rate": 0.000583008,
+      "tn": 56570,
+      "fp": 33,
+      "fn": 20,
+      "tp": 55
+    }
+  },
+  "interpretation": {
+    "balanced_choice": "Hybrid: highest precision and F1 at its frozen operating threshold.",
+    "recall_and_ranking_choice": "GNN: highest recall, average precision and ROC-AUC.",
+    "hybrid_vs_gnn": "Hybrid detected 55/75 fraud cases with 33 false positives; GNN detected 56/75 with 40 false positives.",
+    "caution": "Only 75 fraud cases occur in this chronological test partition; small changes in case counts materially change recall and precision. One holdout does not establish future or production performance."
+  },
+  "score_note": "Hybrid fusion score is an experimental score, not a calibrated fraud probability.",
+  "operational_note": "Current hybrid API returns APPROVE or OTP_VERIFY. It does not implement automatic BLOCK, despite risk thresholds existing in core/config.py.",
+  "source": "Frozen evaluation figures supplied in the project work log; this JSON records results and does not rerun evaluation."
+}
