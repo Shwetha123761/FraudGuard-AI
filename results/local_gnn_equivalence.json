@@ -1,0 +1,18 @@
+{
+  "project": "FraudGuard AI",
+  "evaluation": "optimized_local_gcn_equivalence_check",
+  "sample_rows": 256,
+  "sample_fraud_cases": 52,
+  "sample_legitimate_cases": 204,
+  "reference_nodes": 12000,
+  "reference_directed_edges": 89320,
+  "max_absolute_probability_difference": 5.96e-8,
+  "mean_absolute_probability_difference": 4.02e-9,
+  "tolerance": {
+    "atol": 0.00001,
+    "rtol": 0.0001
+  },
+  "rows_within_tolerance": 256,
+  "passed": true,
+  "scope_note": "This validates numerical equivalence of the optimized local query-node GCN calculation against full-graph inference for the sampled graph setup. It does not establish fraud detection quality or generalize to every possible graph/duplicate-neighbor edge case."
+}
